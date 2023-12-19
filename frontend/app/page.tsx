@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import AddBookForm from '../components/AddBookForm';
 import BookList from '../components/BookList';
 import NavBar from '@/components/Nav';
-import { Progress } from '@/components/ui/progress';
 
 interface Book {
   id: number;
@@ -11,9 +10,26 @@ interface Book {
   state: 'to-read' | 'in-progress' | 'completed';
 }
 
+interface ErrorNotificationProps {
+  message: string;
+  onClose: () => void;
+}
+
+const ErrorNotification: React.FC<ErrorNotificationProps> = ({ message, onClose }) => {
+  return (
+    <div className="bg-red-500 rounded-md flex justify-center items-center space-x-3 text-white text-sm px-2 mb-4">
+      <p>{message}</p>
+      <button onClick={onClose} className="m-2 rounded-sm bg-white text-red-500 text-sm px-4">
+        Close
+      </button>
+    </div>
+  );
+};
+
 const Home: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchBooks = useCallback(async () => {
     try {
@@ -23,9 +39,11 @@ const Home: React.FC = () => {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       const data = await response.json();
-      setBooks(data);
+      setBooks((prevBooks) => [...data]);
+      setError(null); // Clear any previous errors
     } catch (error) {
       console.error('Error fetching books:', error);
+      setError('Error fetching books. Please try again.'); // Set the error message
     } finally {
       setLoading(false);
     }
@@ -108,6 +126,10 @@ const Home: React.FC = () => {
     fetchBooks();
   }, [fetchBooks]);
 
+  const closeErrorNotification = () => {
+    setError(null);
+  };
+
   return (
     <div className="flex flex-col items-center min-h-screen">
       <NavBar />
@@ -120,9 +142,11 @@ const Home: React.FC = () => {
           <AddBookForm onAddBook={handleAddBook} />
         )}
       </div>
+      {/* Notification */}
+      {error && <ErrorNotification message={error} onClose={closeErrorNotification} />}
       {/* Brief Text Section */}
-      <div className="mb-4 text-center">
-        <p className="text-sm">
+      <div className="mb-4 text-center flex justify-center">
+        <p className="text-sm w-2/3">
           Manage your books easily! Add a book using the form above. Use buttons
           to change status or delete a book.
         </p>
